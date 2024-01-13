@@ -1,5 +1,3 @@
-mod state;
-
 use winit::{
     event::*,
     event_loop::{
@@ -9,7 +7,12 @@ use winit::{
     window::WindowBuilder,
 };
 
-fn main() {
+use crate::state::State;
+
+mod state;
+
+#[tokio::main]
+async fn main() {
     env_logger::init();
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
@@ -17,11 +20,13 @@ fn main() {
         .build(&event_loop)
         .expect("failed to build window");
 
+    let mut state = State::new(window).await;
+
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
             ref event,
             window_id,
-        } if window_id == window.id() => match event {
+        } if window_id == state.window().id() => match event {
             WindowEvent::CloseRequested
             | WindowEvent::KeyboardInput {
                 input:
@@ -32,8 +37,28 @@ fn main() {
                     },
                 ..
             } => *control_flow = ControlFlow::Exit,
+
+            WindowEvent::Resized(physical_size) => {
+                state.resize(*physical_size);
+            }
+            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                state.resize(**new_inner_size);
+            }
             _ => {}
         },
+        Event::RedrawRequested(window_id) if window_id == state.window().id() => {
+            state.update();
+            match state.render() {
+                Ok(_) => {}
+                // Reconfigure the surface if lost
+                Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
+                Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                Err(e) => eprintln!("{:?}", e),
+            }
+        }
+        Event::MainEventsCleared => {
+            state.window().request_redraw();
+        }
         _ => {}
     });
 }

@@ -10,4 +10,5 @@ env_logger = "0.10"
 log = "0.4"
 wgpu = "0.18"
 winit = "0.28"
+tokio = { version = "1.0.0", features = ["rt", "rt-multi-thread", "macros"] }
 
