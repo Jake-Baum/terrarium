@@ -9,3 +9,4 @@ fmt:
 .PHONY: lint
 lint: fmt
 	cargo clippy --fix --allow-dirty
+	cargo udeps
