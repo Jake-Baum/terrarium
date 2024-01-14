@@ -11,7 +11,6 @@ use cgmath::{
     Rad,
     SquareMatrix,
     Vector3,
-    Vector4,
 };
 use winit::{
     dpi::PhysicalPosition,
@@ -95,17 +94,15 @@ impl Camera {
 // This is so we can store this in a buffer
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
-    // We can't use cgmath with bytemuck directly, so we'll have
-    // to convert the Matrix4 into a 4x4 f32 array
-    view_proj: [[f32; 4]; 4],
     view_position: [f32; 4],
+    view_proj: [[f32; 4]; 4],
 }
 
 impl CameraUniform {
     pub fn new() -> Self {
         Self {
+            view_position: [0.0, 1.0, -1.0, 1.0],
             view_proj: Matrix4::identity().into(),
-            view_position: Vector4::new(0.0, 1.0, -1.0, 1.0).into(),
         }
     }
 

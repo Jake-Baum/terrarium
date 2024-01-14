@@ -16,7 +16,9 @@ use crate::{
 
 mod camera;
 mod instance;
+mod light;
 mod model;
+mod render_pipeline;
 mod state;
 mod texture;
 
