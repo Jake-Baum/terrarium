@@ -44,11 +44,12 @@ use crate::{
         Model,
         Vertex,
     },
+    plane::{
+        PLANE_INDICES,
+        PLANE_VERTICES,
+    },
     render_pipeline::create_render_pipeline,
-    texture,
     texture::Texture,
-    INDICES,
-    VERTICES,
 };
 
 const NUM_INSTANCES_PER_ROW: u32 = 10;
@@ -332,16 +333,21 @@ impl State {
                 &device,
                 &layout,
                 config.format,
-                Some(texture::Texture::DEPTH_FORMAT),
+                Some(Texture::DEPTH_FORMAT),
                 &[model::ModelVertex::desc()],
                 shader,
             )
         };
 
-        let mesh = Mesh::new("triangle", &device, Vec::from(VERTICES), Vec::from(INDICES));
+        let mesh = Mesh::new(
+            "plane",
+            &device,
+            Vec::from(PLANE_VERTICES),
+            Vec::from(PLANE_INDICES),
+        );
 
         let material = Material::new(
-            "triangle_material",
+            "material",
             &device,
             &texture_bind_group_layout,
             diffuse_texture,

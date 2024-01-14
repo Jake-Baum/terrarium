@@ -10,7 +10,6 @@ use winit::{
 };
 
 use crate::{
-    model::ModelVertex,
     state::State,
 };
 
@@ -18,29 +17,10 @@ mod camera;
 mod instance;
 mod light;
 mod model;
+mod plane;
 mod render_pipeline;
 mod state;
 mod texture;
-
-const VERTICES: &[ModelVertex] = &[
-    ModelVertex {
-        position: [-1.0, 0.0, 0.0],
-        tex_coords: [0.0, 0.0],
-        normal: [0.0, 0.0, 1.0],
-    }, // A
-    ModelVertex {
-        position: [1.0, 0.0, 0.0],
-        tex_coords: [0.0, 0.0],
-        normal: [0.0, 0.0, 1.0],
-    }, // B
-    ModelVertex {
-        position: [0.0, 2.0, 0.0],
-        tex_coords: [0.0, 0.0],
-        normal: [0.0, 0.0, 1.0],
-    }, // C
-];
-
-const INDICES: &[u32] = &[0, 1, 2];
 
 #[tokio::main]
 async fn main() {
