@@ -15,23 +15,23 @@ use crate::{
 };
 
 mod camera;
-mod state;
-mod vertex;
 mod instance;
+mod state;
 mod texture;
+mod vertex;
 
 const VERTICES: &[Vertex] = &[
     Vertex {
         position: [-1.0, 0.0, 0.0],
-        color: [1.0, 0.0, 0.0],
+        tex_coords: [0.0, 0.0],
     }, // A
     Vertex {
         position: [1.0, 0.0, 0.0],
-        color: [0.0, 1.0, 0.0],
+        tex_coords: [0.0, 0.0],
     }, // B
     Vertex {
         position: [0.0, 2.0, 0.0],
-        color: [0.0, 0.0, 1.0],
+        tex_coords: [0.0, 0.0],
     }, // C
 ];
 
