@@ -1,3 +1,9 @@
+use cgmath::{
+    InnerSpace,
+    Quaternion,
+    Rotation3,
+    Zero,
+};
 use std::{
     ops::Sub,
     time::{
@@ -6,15 +12,7 @@ use std::{
     },
 };
 
-use cgmath::{
-    InnerSpace,
-    Quaternion,
-    Rotation3,
-    Zero,
-};
-use wgpu::{
-    util::DeviceExt,
-};
+use wgpu::util::DeviceExt;
 use winit::{
     event::{
         ElementState,
@@ -36,9 +34,15 @@ use crate::{
         Instance,
         InstanceRaw,
     },
-    texture,
+    model,
+    model::{
+        DrawModel,
+        Material,
+        Mesh,
+        Model,
+        Vertex,
+    },
     texture::Texture,
-    vertex::Vertex,
     INDICES,
     VERTICES,
 };
@@ -57,9 +61,6 @@ pub struct State {
     config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
-    vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer,
-    num_indices: u32,
     camera: Camera,
     projection: Projection,
     camera_uniform: CameraUniform,
@@ -72,8 +73,7 @@ pub struct State {
     instances: Vec<Instance>,
     instance_buffer: wgpu::Buffer,
     depth_texture: Texture,
-    diffuse_bind_group: wgpu::BindGroup,
-    diffuse_texture: Texture,
+    model: Model,
     // The window must be declared after the surface so
     // it gets dropped after it as the surface contains
     // unsafe references to the window's resources.
@@ -139,7 +139,7 @@ impl State {
         let diffuse_width = 1;
         let diffuse_height = 1;
 
-        let diffuse_texture = texture::Texture::from_bytes(
+        let diffuse_texture = Texture::from_bytes(
             &device,
             &queue,
             &diffuse_rgba,
@@ -171,21 +171,6 @@ impl State {
                 ],
                 label: Some("texture_bind_group_layout"),
             });
-
-        let diffuse_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                },
-            ],
-            label: Some("diffuse_bind_group"),
-        });
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
@@ -264,7 +249,7 @@ impl State {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&camera_bind_group_layout, &texture_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -274,7 +259,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc(), InstanceRaw::desc()],
+                buffers: &[model::ModelVertex::desc(), InstanceRaw::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -309,19 +294,19 @@ impl State {
             multiview: None,
         });
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+        let mesh = Mesh::new("triangle", &device, Vec::from(VERTICES), Vec::from(INDICES));
 
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(INDICES),
-            usage: wgpu::BufferUsages::INDEX,
-        });
+        let material = Material::new(
+            "triangle_material",
+            &device,
+            &texture_bind_group_layout,
+            diffuse_texture,
+        );
 
-        let num_indices = INDICES.len() as u32;
+        let model = Model {
+            meshes: vec![mesh],
+            materials: vec![material],
+        };
 
         let dt = Duration::from_millis(16);
         let last_render_time = Instant::now().sub(dt);
@@ -334,9 +319,6 @@ impl State {
             config,
             size,
             render_pipeline,
-            vertex_buffer,
-            num_indices,
-            index_buffer,
             camera,
             projection,
             camera_uniform,
@@ -349,8 +331,7 @@ impl State {
             instances,
             instance_buffer,
             depth_texture,
-            diffuse_bind_group,
-            diffuse_texture,
+            model,
         }
     }
 
@@ -457,13 +438,17 @@ impl State {
                 timestamp_writes: None,
             });
 
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-            render_pass.set_bind_group(1, &self.diffuse_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
+            render_pass.set_pipeline(&self.render_pipeline);
+
+            let mesh = &self.model.meshes[0];
+            let material = &self.model.materials[mesh.material];
+            render_pass.draw_mesh_instanced(
+                mesh,
+                material,
+                0..self.instances.len() as u32,
+                &self.camera_bind_group,
+            );
         }
 
         // submit will accept anything that implements IntoIter

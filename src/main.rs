@@ -10,32 +10,35 @@ use winit::{
 };
 
 use crate::{
+    model::ModelVertex,
     state::State,
-    vertex::Vertex,
 };
 
 mod camera;
 mod instance;
+mod model;
 mod state;
 mod texture;
-mod vertex;
 
-const VERTICES: &[Vertex] = &[
-    Vertex {
+const VERTICES: &[ModelVertex] = &[
+    ModelVertex {
         position: [-1.0, 0.0, 0.0],
         tex_coords: [0.0, 0.0],
+        normal: [0.0, 0.0, 1.0],
     }, // A
-    Vertex {
+    ModelVertex {
         position: [1.0, 0.0, 0.0],
         tex_coords: [0.0, 0.0],
+        normal: [0.0, 0.0, 1.0],
     }, // B
-    Vertex {
+    ModelVertex {
         position: [0.0, 2.0, 0.0],
         tex_coords: [0.0, 0.0],
+        normal: [0.0, 0.0, 1.0],
     }, // C
 ];
 
-const INDICES: &[u16] = &[0, 1, 2];
+const INDICES: &[u32] = &[0, 1, 2];
 
 #[tokio::main]
 async fn main() {

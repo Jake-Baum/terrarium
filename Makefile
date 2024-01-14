@@ -8,5 +8,5 @@ fmt:
 
 .PHONY: lint
 lint: fmt
-	cargo clippy --fix --allow-dirty
+	cargo clippy --fix --allow-dirty --allow-staged
 	cargo udeps
